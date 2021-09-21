@@ -1,3 +1,4 @@
 1 - write doc for helmping understanding
-2 - create method for unify all strpos/str_replace
-3 - think about the best way to map tag with associate value
+2 - think about the best way to map tag with associate value
+3 - create method for unify all strpos/str_replace
+4 - run test, fix and re run

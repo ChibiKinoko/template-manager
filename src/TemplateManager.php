@@ -87,9 +87,11 @@ class TemplateManager
      * @param string $value
      * @return string
      */
-    private function replace($text, string $tag, string $value): string
+    private function replace(&$text, string $tag, string $value): string
     {
-        if (strpos($text, $tag) === false) return false;
+        if (strpos($text, $tag) === false) {
+            return false;
+        }
 
         $text = str_replace(
             $tag,
