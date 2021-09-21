@@ -8,6 +8,13 @@ class MeetingPoint
     public string $url;
     public string $name;
 
+    /**
+     * Meeting Point constructor
+     * @param  int    $id
+     * @param  string $url
+     * @param  string $name
+     * @return void
+     */
     public function __construct(int $id, string $url, string $name)
     {
         $this->id = $id;
