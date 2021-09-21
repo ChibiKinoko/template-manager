@@ -36,91 +36,66 @@ class TemplateManager
      * Compute template with data
      * @param  string $text
      * @param  array  $data
-     * @return object
+     * @return string
      */
-    private function computeText($text, array $data)
+    private function computeText(string $text, array $data): string
     {
         $APPLICATION_CONTEXT = ApplicationContext::getInstance();
 
         $lesson = (isset($data['lesson']) and $data['lesson'] instanceof Lesson) ? $data['lesson'] : null;
+        $user = (isset($data['user']) and ($data['user'] instanceof Learner)) ? $data['user'] : $APPLICATION_CONTEXT->getCurrentUser();
 
         if ($lesson) {
             $lessonRepository   = LessonRepository::getInstance()->getById($lesson->id) ?? null;
             $meetingPoint       = MeetingPointRepository::getInstance()->getById($lesson->meetingPointId) ?? null;
             $instructorOfLesson = InstructorRepository::getInstance()->getById($lesson->instructorId) ?? null;
 
-            // $containsSummaryHtml = strpos($text, '[lesson:summary_html]');
-            // $containsSummary     = strpos($text, '[lesson:summary]');
-
-            if (strpos($text, '[lesson:summary_html]') !== false) {
-                $text = str_replace(
-                    '[lesson:summary_html]',
-                    Lesson::renderHtml($lessonRepository),
-                    $text
-                );
-            }
-            if (strpos($text, '[lesson:summary]') !== false) {
-                $text = str_replace(
-                    '[lesson:summary]',
-                    Lesson::renderText($lessonRepository),
-                    $text
-                );
-            }
-
-            if (strpos($text, '[lesson:instructor_link]') !== false) {
-                $text = str_replace(
-                    '[instructor_link]',
-                    'instructors/' . $instructorOfLesson->id . '-' . urlencode($instructorOfLesson->firstname),
-                    $text
-                );
-            }
-
-            if (strpos($text, '[lesson:instructor_name]') !== false) {
-                $text = str_replace(
-                    '[lesson:instructor_name]',
-                    $instructorOfLesson->firstname,
-                    $text
-                );
-            }
+            $mapping = [
+                '[lesson:summary_html]'    => Lesson::renderHtml($lessonRepository),
+                '[lesson:summary]'         => Lesson::renderText($lessonRepository),
+                '[lesson:instructor_name]' => $instructorOfLesson->firstname,
+                '[lesson:instructor_link]' => 'instructors/' . $instructorOfLesson->id . '-' . urlencode($instructorOfLesson->firstname),
+                '[lesson:meeting_point]'   => $meetingPoint->name,
+                '[lesson:start_date]'      => $lesson->start_time->format('d/m/Y'),
+                '[lesson:start_time]'      => $lesson->start_time->format('H:i'),
+                '[lesson:end_time]'        => $lesson->end_time->format('H:i'),
+                '[user:first_name]'        => ucfirst(strtolower($user->firstname))
+            ];
         }
-
-        if (strpos($text, '[lesson:meeting_point]') !== false)
-            $text = str_replace(
-                '[lesson:meeting_point]',
-                $meetingPoint->name,
-                $text
-            );
-
-        if (strpos($text, '[lesson:start_date]') !== false)
-            $text = str_replace(
-                '[lesson:start_date]',
-                $lesson->start_time->format('d/m/Y'),
-                $text
-            );
-
-        if (strpos($text, '[lesson:start_time]') !== false)
-            $text = str_replace(
-                '[lesson:start_time]',
-                $lesson->start_time->format('H:i'),
-                $text
-            );
-
-        if (strpos($text, '[lesson:end_time]') !== false)
-            $text = str_replace(
-                '[lesson:end_time]',
-                $lesson->end_time->format('H:i'),
-                $text
-            );
 
         /*
          * USER
          * [user:*]
          */
-        $_user  = (isset($data['user'])  and ($data['user']  instanceof Learner))  ? $data['user']  : $APPLICATION_CONTEXT->getCurrentUser();
-        if ($_user) {
-            (strpos($text, '[user:first_name]') !== false) and $text = str_replace('[user:first_name]', ucfirst(strtolower($_user->firstname)), $text);
+        if ($user) {
+            $mapping['[user:first_name]'] = ucfirst(strtolower($user->firstname));
         }
 
+        foreach ($mapping as $key => $value) {
+            if (!$value) continue;
+
+            $this->replace($text, $key, $value);
+        }
+
+        return $text;
+    }
+
+    /**
+     * Replace tag with appropriate value
+     * @param string $text
+     * @param string $tag
+     * @param string $value
+     * @return string
+     */
+    private function replace($text, string $tag, string $value): string
+    {
+        if (strpos($text, $tag) === false) return false;
+
+        $text = str_replace(
+            $tag,
+            $value,
+            $text
+        );
         return $text;
     }
 }
